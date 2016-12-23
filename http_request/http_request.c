@@ -46,6 +46,10 @@ int main(int argc, char **argv)
 	    fprintf(stderr, "Invalid IP Address: %s\n", serverIP);
 		exit(1);
 	}
+	if (connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) {
+	    perror("Connect");
+		exit(1);
+	}
 
 	get = build_get_query(argv[1], page);
 	fprintf(stdout, "<start>\n%s\n<end>\n", get);
@@ -120,6 +124,7 @@ static char *resolvename(char *domain_name)
 		printf("Trans IP to ASCII failed!\n");
 		exit(1);
 	}
+	printf("Resolve domain name success!\nAddress:%s\n", res_addr);
 	
 	return res_addr;
 }
