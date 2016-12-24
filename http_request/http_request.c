@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+#include <sys/time.h>
 
 #define HOST "www.baidu.com"
 #define PAGE "/"
@@ -67,28 +69,28 @@ int main(int argc, char **argv)
 	}
 
 	memset(buf, 0, sizeof(buf));
-	int htmlstart = 0;
-	char *htmlcontent;
-	while ((result = recv(sock, buf, 65535, 0)) > 0) {
-	    if (htmlstart == 0) {
-		    htmlcontent = strstr(buf, "\r\n\r\n");
-			if (htmlcontent != NULL) {
-			    htmlstart = 1;
-				htmlcontent += 4;
-			}
-		} else {
-		    htmlcontent = buf;
-		}
-
-		if (htmlstart) {
-		    fprintf(stdout, "%s", htmlcontent);
-		}
-		memset(buf, 0, result);
+	struct timeval timeout = {10, 0};
+	fd_set fds;
+	
+	FD_ZERO(&fds);
+	FD_SET(sock, &fds);
+	
+	int status = select((sock + 1), &fds, NULL, NULL, &timeout);
+	
+	if (status < 0) {
+		perror("Select");
+		exit(1);
+	} else if (status == 0) {
+		printf("Timeout.\n");
+		exit(1);
+    } else {
+		result = recv(sock, buf, 65535, 0);
 	}
-	fprintf(stdout, "Receive data over!\n");
 	
 	if (result < 0) {
 	    perror("Error receiving data");
+	} else {
+		printf("%s", buf);
 	}
 
 	free(get);
