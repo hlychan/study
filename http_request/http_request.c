@@ -18,19 +18,17 @@
 #define ACCEPTENCODING "gzip,deflate,sdch"
 
 static int create_tcp_socket(void);
-static char *resolvename(char *);
+static char **resolvename(char *);
 static char *build_get_query(char *, char *);
 
 int main(int argc, char **argv)
 {
 	struct sockaddr_in *server;
 	int sock;
-	char *serverIP;
+	char **serverIP = NULL;
 	int result = -1;
 	char *get, *page;
 	char buf[65536];
-
-	page = PAGE;
     
     sock = create_tcp_socket();  
     serverIP = resolvename(argv[1]); 
@@ -39,18 +37,22 @@ int main(int argc, char **argv)
 	server = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
     server->sin_family = AF_INET;
 	server->sin_port = htons(80);
-	if ((result = inet_pton(AF_INET, serverIP, (void *)(&(server->sin_addr.s_addr)))) < 0) {
-	    perror("Can't set server IP");
-		exit(1);
-	} else if (result == 0) {
-	    fprintf(stderr, "Invalid IP Address: %s\n", serverIP);
-		exit(1);
+	
+	while (*serverIP != NULL) {
+		if ((result = inet_pton(AF_INET, *serverIP, (void *)(&(server->sin_addr.s_addr)))) <= 0) {
+			printf("Set server IP failed!\n");
+			exit(1);
+		}
+	    if (connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) {
+	        perror("Connect");
+			*serverIP++;
+	    } else {
+			printf("Connect to server success, Address:%s\n", (char *)inet_ntoa(server->sin_addr));
+			break;
+		}
 	}
-	if (connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) {
-	    perror("Connect");
-		exit(1);
-	}
-
+ 
+    page = PAGE;
 	get = build_get_query(argv[1], page);
 	fprintf(stdout, "<start>\n%s\n<end>\n", get);
 
@@ -79,14 +81,14 @@ int main(int argc, char **argv)
 		}
 
 		if (htmlstart) {
-		    fprintf(stdout, htmlcontent);
+		    fprintf(stdout, "%s", htmlcontent);
 		}
 		memset(buf, 0, result);
 	}
 	fprintf(stdout, "Receive data over!\n");
 	
 	if (result < 0) {
-	    perror("Error receiving data!\n");
+	    perror("Error receiving data");
 	}
 
 	free(get);
@@ -109,22 +111,31 @@ static int create_tcp_socket(void)
 	return s;
 }
 
-static char *resolvename(char *domain_name)
+static char **resolvename(char *domain_name)
 {
-	struct hostent *h;
+	struct hostent *host;
+	char **res_addr;
 	int ipLen = 15;
-    char *res_addr = malloc(ipLen + 1);
+	int i, count = 0;
     
-    memset(res_addr, 0, ipLen + 1);
-	if ((h = gethostbyname(domain_name)) == NULL) {
+	if ((host = gethostbyname(domain_name)) == NULL) {
 		printf("Resolve domain name failed!\n");
 		exit(1);
 	}
-	if (inet_ntop(AF_INET, (void *)h->h_addr, res_addr, ipLen) == NULL) {
-		printf("Trans IP to ASCII failed!\n");
-		exit(1);
+	
+	for (i = 0; host->h_addr_list[i] != 0; i++) count++;
+	
+	res_addr = (char **)malloc(sizeof(char *) * count);
+	for (i = 0; host->h_addr_list[i] != 0; i++) {
+		res_addr[i] = (char *)malloc(ipLen + 1);
+	    if (inet_ntop(AF_INET, (void *)host->h_addr_list[i], res_addr[i], ipLen) == 0) {
+		    printf("Trans IP to ASCII failed!\n");
+		    exit(1);
+	    }
 	}
-	printf("Resolve domain name success!\nAddress:%s\n", res_addr);
+	for (i = 0; res_addr[i] != NULL; i++) {
+	    printf("Resolve domain name success!\nAddress:%s\n", res_addr[i]);
+	}
 	
 	return res_addr;
 }
