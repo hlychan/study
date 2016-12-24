@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 			printf("Set server IP failed!\n");
 			exit(1);
 		}
-	    if (connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr)) < 0) {
+	    if ((result = connect(sock, (struct sockaddr *)server, sizeof(struct sockaddr))) < 0) {
 	        perror("Connect");
 			*serverIP++;
 	    } else {
@@ -53,6 +53,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	if (result < 0) exit(1);
  
     page = PAGE;
 	get = build_get_query(argv[1], page);
@@ -130,7 +131,7 @@ static char **resolvename(char *domain_name)
 	res_addr = (char **)malloc(sizeof(char *) * count);
 	for (i = 0; host->h_addr_list[i] != 0; i++) {
 		res_addr[i] = (char *)malloc(ipLen + 1);
-	    if (inet_ntop(AF_INET, (void *)host->h_addr_list[i], res_addr[i], ipLen) == 0) {
+	    if (inet_ntop(AF_INET, (void *)host->h_addr_list[i], res_addr[i], ipLen+1) == 0) {
 		    printf("Trans IP to ASCII failed!\n");
 		    exit(1);
 	    }
