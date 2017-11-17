@@ -47,10 +47,11 @@ void non_recursion_merge_sort(int nums[], int tmp[], int numsSize)
 
 int main()
 {
-    int nums[] = {8,5,9,0,3/*,2,1,6,7,8,4,1,3,2,0,1*/};
+    int nums[] = {8,5,9,0,3,2,1,6,7,8,4,1,3,2,0,1};
     int *tmp = malloc(sizeof(nums));
     memset(tmp, 0, sizeof(nums));
-    non_recursion_merge_sort(nums, tmp, sizeof(nums) / sizeof(int));
+    //non_recursion_merge_sort(nums, tmp, sizeof(nums) / sizeof(int));
+    merge_sort(nums, tmp, 0, sizeof(nums) / sizeof(int) - 1);
     int i;
     for (i = 0; i < sizeof(nums) / sizeof(int); i++)
         printf("%d ", nums[i]);
