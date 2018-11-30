@@ -149,6 +149,7 @@ void show_usage(const char *program)
 	printf("Usage: %s [argument]\n", program);
 	printf("    Where arguments is optional as:\n");
 	printf("\t-a server address\n");
+	printf("\t-f upload file name\n");
 	printf("\t-p server port\n");
 	printf("\t-h show usage\n");
 }
